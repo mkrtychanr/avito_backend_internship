@@ -88,7 +88,31 @@ func (s *Server) ReserveMoney(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) AllowTransaction(w http.ResponseWriter, r *http.Request) {
-
+	transaction := model.Transaction{}
+	ok := getDataFromRequest(w, r, &transaction)
+	if !ok {
+		return
+	}
+	id, ok, err := s.isTransactionInReserve(transaction)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	if !ok {
+		transactionNotFound(w)
+		return
+	}
+	err = s.createNewReport(transaction)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	err = s.deleteReserve(id)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	respondSuccess(w)
 }
 
 func (s *Server) GetClientBalance(w http.ResponseWriter, r *http.Request) {

@@ -25,6 +25,10 @@ func clientNotFound(w http.ResponseWriter) {
 	makeJsonRespond(w, 403, jsonError("client not found"))
 }
 
+func transactionNotFound(w http.ResponseWriter) {
+	makeJsonRespond(w, 403, jsonError("transaction not found"))
+}
+
 func notEnoughMoneyOnTheBalanceSheet(w http.ResponseWriter) {
 	makeJsonRespond(w, 406, jsonError("not enough money on the balance sheet"))
 }
