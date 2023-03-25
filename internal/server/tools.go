@@ -8,13 +8,25 @@ import (
 	"net/http"
 )
 
+func respondSuccess(w http.ResponseWriter) {
+	makeJsonRespond(w, 200, jsonResult("success"))
+}
+
 func internalServerError(w http.ResponseWriter, err error) {
 	makeJsonRespond(w, 500, jsonError("internal server error"))
 	log.Println(err)
 }
 
-func respondSuccess(w http.ResponseWriter) {
-	makeJsonRespond(w, 200, jsonResult("success"))
+func invalidData(w http.ResponseWriter) {
+	makeJsonRespond(w, 400, jsonError("invalid data"))
+}
+
+func clientNotFound(w http.ResponseWriter) {
+	makeJsonRespond(w, 403, jsonError("client not found"))
+}
+
+func notEnoughMoneyOnTheBalanceSheet(w http.ResponseWriter) {
+	makeJsonRespond(w, 406, jsonError("not enough money on the balance sheet"))
 }
 
 func getDataFromRequest(w http.ResponseWriter, r *http.Request, v interface{}) bool {
@@ -25,7 +37,7 @@ func getDataFromRequest(w http.ResponseWriter, r *http.Request, v interface{}) b
 	}
 	err = json.Unmarshal(data, v)
 	if err != nil {
-		makeJsonRespond(w, 400, jsonError("invalid data"))
+		invalidData(w)
 		return false
 	}
 	return true

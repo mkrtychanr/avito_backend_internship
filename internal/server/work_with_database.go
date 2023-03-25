@@ -1,5 +1,7 @@
 package server
 
+import "github.com/mkrtychanr/avito_backend_internship/internal/model"
+
 func (s *Server) createClient(id int64) error {
 	_, err := s.db.Exec("insert into client (id, balance) values ($1, 0)", id)
 	if err != nil {
@@ -32,6 +34,14 @@ func (s *Server) getClientBalance(id int64) (float64, error) {
 
 func (s *Server) setBalance(id int64, balance float64) error {
 	_, err := s.db.Exec("update client set balance = $1 where id = $2", balance, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) createNewReserve(transaction model.Transaction) error {
+	_, err := s.db.Exec("insert into reserve (client_id, service_id, order_id, price) values ($1, $2, $3, $4)", transaction.ClientId, transaction.ServiceId, transaction.OrderId, transaction.Price)
 	if err != nil {
 		return err
 	}
