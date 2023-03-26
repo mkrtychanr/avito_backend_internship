@@ -49,6 +49,11 @@ func (s *Server) AddMoney(w http.ResponseWriter, r *http.Request) {
 		internalServerError(w, err)
 		return
 	}
+	err = s.addClientSheetChange(addMoney.Id, addMoney.Value, 0)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
 	respondSuccess(w)
 }
 
@@ -96,6 +101,11 @@ func (s *Server) ReserveMoney(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = s.setBalance(transaction.ClientId, actualValue.Sub(valueFromJson).String())
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	err = s.addClientSheetChange(transaction.ClientId, transaction.Price, 1)
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -194,6 +204,11 @@ func (s *Server) UnreserveMoney(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = s.setBalance(transaction.ClientId, actualValue.Add(valueFromJson).String())
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	err = s.addClientSheetChange(transaction.ClientId, transaction.Price, 0)
 	if err != nil {
 		internalServerError(w, err)
 		return

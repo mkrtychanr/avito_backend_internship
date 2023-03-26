@@ -53,7 +53,7 @@ func (s *Server) setBalance(id string, balance string) error {
 func (s *Server) createNewReserve(transaction model.Transaction) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	_, err := s.db.Exec("insert into reserve (client_id, service_id, order_id, price) values ($1, $2, $3, $4)", transaction.ClientId, transaction.ServiceId, transaction.OrderId, transaction.Price)
+	_, err := s.db.Exec("insert into reserve (client_id, service_id, order_id, price, reserve_time) values ($1, $2, $3, $4, current_timestamp)", transaction.ClientId, transaction.ServiceId, transaction.OrderId, transaction.Price)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (s *Server) deleteReserve(id int64) error {
 func (s *Server) createNewReport(transaction model.Transaction) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	_, err := s.db.Exec("insert into report (client_id, service_id, order_id, price) values ($1, $2, $3, $4)", transaction.ClientId, transaction.ServiceId, transaction.OrderId, transaction.Price)
+	_, err := s.db.Exec("insert into report (client_id, service_id, order_id, price, report_time) values ($1, $2, $3, $4, current_timestamp)", transaction.ClientId, transaction.ServiceId, transaction.OrderId, transaction.Price)
 	if err != nil {
 		return err
 	}
@@ -96,4 +96,14 @@ func (s *Server) isTransactionInReserve(transaction model.Transaction) (int64, b
 		return id, true, nil
 	}
 	return 0, false, nil
+}
+
+func (s *Server) addClientSheetChange(id, value string, status byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, err := s.db.Exec("insert into client_sheet_change (client_id, difference, status, change_time) values ($1, $2, $3, current_timestamp)", id, value, status)
+	if err != nil {
+		return err
+	}
+	return nil
 }
