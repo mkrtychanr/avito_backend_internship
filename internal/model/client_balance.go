@@ -1,5 +1,5 @@
 package model
 
 type ClientBalance struct {
-	Id int64 `json:"id"`
+	Id string `json:"id"`
 }

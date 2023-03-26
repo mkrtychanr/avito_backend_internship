@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/mkrtychanr/avito_backend_internship/internal/model"
 	"github.com/shopspring/decimal"
@@ -14,11 +13,16 @@ func (s *Server) AddMoney(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if addMoney.Id < 1 || addMoney.Value < 0 {
+	valueFromJson, err := decimal.NewFromString(addMoney.Value)
+	if err != nil {
 		invalidData(w)
 		return
 	}
-	ok, err := s.isClientExist(addMoney.Id)
+	if !isGreaterThanOrEqualThanZero(valueFromJson) {
+		invalidData(w)
+		return
+	}
+	ok, err = s.isClientExist(addMoney.Id)
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -30,13 +34,17 @@ func (s *Server) AddMoney(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	actualValue, err := s.getClientBalance(addMoney.Id)
+	actualValueString, err := s.getClientBalance(addMoney.Id)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
-	actualValue += addMoney.Value
-	err = s.setBalance(addMoney.Id, actualValue)
+	actualValue, err := decimal.NewFromString(actualValueString)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	err = s.setBalance(addMoney.Id, actualValue.Add(valueFromJson).String())
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -50,11 +58,16 @@ func (s *Server) ReserveMoney(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if transaction.ClientId < 1 || transaction.ServiceId < 1 || transaction.OrderId < 1 {
+	valueFromJson, err := decimal.NewFromString(transaction.Price)
+	if err != nil {
 		invalidData(w)
 		return
 	}
-	ok, err := s.isClientExist(transaction.ClientId)
+	if !isGreaterThanOrEqualThanZero(valueFromJson) {
+		invalidData(w)
+		return
+	}
+	ok, err = s.isClientExist(transaction.ClientId)
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -63,14 +76,17 @@ func (s *Server) ReserveMoney(w http.ResponseWriter, r *http.Request) {
 		clientNotFound(w)
 		return
 	}
-	balance, err := s.getClientBalance(transaction.ClientId)
+	actualValueString, err := s.getClientBalance(transaction.ClientId)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
-	highBalance := decimal.NewFromFloat(balance)
-	highPrice := decimal.NewFromFloat(transaction.Price)
-	if highBalance.Cmp(highPrice) == -1 {
+	actualValue, err := decimal.NewFromString(actualValueString)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	if actualValue.Cmp(valueFromJson) == -1 {
 		notEnoughMoneyOnTheBalanceSheet(w)
 		return
 	}
@@ -79,7 +95,7 @@ func (s *Server) ReserveMoney(w http.ResponseWriter, r *http.Request) {
 		internalServerError(w, err)
 		return
 	}
-	err = s.setBalance(transaction.ClientId, balance-transaction.Price)
+	err = s.setBalance(transaction.ClientId, actualValue.Sub(valueFromJson).String())
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -121,9 +137,6 @@ func (s *Server) GetClientBalance(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if getClientBalance.Id < 1 {
-		invalidData(w)
-	}
 	ok, err := s.isClientExist(getClientBalance.Id)
 	if err != nil {
 		internalServerError(w, err)
@@ -133,18 +146,27 @@ func (s *Server) GetClientBalance(w http.ResponseWriter, r *http.Request) {
 		clientNotFound(w)
 		return
 	}
-	balance, err := s.getClientBalance(getClientBalance.Id)
+	value, err := s.getClientBalance(getClientBalance.Id)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
-	makeJsonRespond(w, 200, jsonResult(strconv.FormatFloat(balance, 'f', -1, 64)))
+	makeJsonRespond(w, 200, jsonResult(value))
 }
 
 func (s *Server) UnreserveMoney(w http.ResponseWriter, r *http.Request) {
 	transaction := model.Transaction{}
 	ok := getDataFromRequest(w, r, &transaction)
 	if !ok {
+		return
+	}
+	valueFromJson, err := decimal.NewFromString(transaction.Price)
+	if err != nil {
+		invalidData(w)
+		return
+	}
+	if !isGreaterThanOrEqualThanZero(valueFromJson) {
+		invalidData(w)
 		return
 	}
 	id, ok, err := s.isTransactionInReserve(transaction)
@@ -156,18 +178,22 @@ func (s *Server) UnreserveMoney(w http.ResponseWriter, r *http.Request) {
 		transactionNotFound(w)
 		return
 	}
-	actualValue, err := s.getClientBalance(transaction.ClientId)
+	actualValueString, err := s.getClientBalance(transaction.ClientId)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
-	actualValue += transaction.Price
+	actualValue, err := decimal.NewFromString(actualValueString)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
 	err = s.deleteReserve(id)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
-	err = s.setBalance(transaction.ClientId, actualValue)
+	err = s.setBalance(transaction.ClientId, actualValue.Add(valueFromJson).String())
 	if err != nil {
 		internalServerError(w, err)
 		return

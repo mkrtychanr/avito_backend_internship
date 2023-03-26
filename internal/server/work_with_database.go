@@ -1,8 +1,10 @@
 package server
 
-import "github.com/mkrtychanr/avito_backend_internship/internal/model"
+import (
+	"github.com/mkrtychanr/avito_backend_internship/internal/model"
+)
 
-func (s *Server) createClient(id int64) error {
+func (s *Server) createClient(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, err := s.db.Exec("insert into client (id, balance) values ($1, 0)", id)
@@ -12,7 +14,7 @@ func (s *Server) createClient(id int64) error {
 	return nil
 }
 
-func (s *Server) isClientExist(id int64) (bool, error) {
+func (s *Server) isClientExist(id string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	rows, err := s.db.Query("select id from client where id = $1", id)
@@ -25,20 +27,20 @@ func (s *Server) isClientExist(id int64) (bool, error) {
 	return false, nil
 }
 
-func (s *Server) getClientBalance(id int64) (float64, error) {
+func (s *Server) getClientBalance(id string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	rows, err := s.db.Query("select balance from client where id = $1", id)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	rows.Next()
-	var result float64
+	var result string
 	rows.Scan(&result)
 	return result, nil
 }
 
-func (s *Server) setBalance(id int64, balance float64) error {
+func (s *Server) setBalance(id string, balance string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, err := s.db.Exec("update client set balance = $1 where id = $2", balance, id)

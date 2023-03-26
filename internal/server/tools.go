@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/shopspring/decimal"
 )
 
 func respondSuccess(w http.ResponseWriter) {
@@ -62,4 +64,9 @@ func makeJsonRespond(w http.ResponseWriter, code int, data []byte) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func isGreaterThanOrEqualThanZero(value decimal.Decimal) bool {
+	zero := decimal.New(0, 0)
+	return value.GreaterThanOrEqual(zero)
 }
