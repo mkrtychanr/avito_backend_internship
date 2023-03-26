@@ -140,3 +140,37 @@ func (s *Server) GetClientBalance(w http.ResponseWriter, r *http.Request) {
 	}
 	makeJsonRespond(w, 200, jsonResult(strconv.FormatFloat(balance, 'f', -1, 64)))
 }
+
+func (s *Server) UnreserveMoney(w http.ResponseWriter, r *http.Request) {
+	transaction := model.Transaction{}
+	ok := getDataFromRequest(w, r, &transaction)
+	if !ok {
+		return
+	}
+	id, ok, err := s.isTransactionInReserve(transaction)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	if !ok {
+		transactionNotFound(w)
+		return
+	}
+	actualValue, err := s.getClientBalance(transaction.ClientId)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	actualValue += transaction.Price
+	err = s.deleteReserve(id)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	err = s.setBalance(transaction.ClientId, actualValue)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	respondSuccess(w)
+}

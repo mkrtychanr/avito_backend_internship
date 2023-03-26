@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -14,6 +15,7 @@ type Server struct {
 	db     *sql.DB
 	config *config
 	router *chi.Mux
+	mu     sync.Mutex
 }
 
 func NewServer(configPath string) (*Server, error) {
@@ -34,6 +36,7 @@ func NewServer(configPath string) (*Server, error) {
 		db:     db,
 		config: config,
 		router: chi.NewMux(),
+		mu:     sync.Mutex{},
 	}, nil
 }
 
@@ -43,6 +46,7 @@ func (s *Server) setRouter() {
 	s.router.Post("/reserve_money", s.ReserveMoney)
 	s.router.Post("/allow_transaction", s.AllowTransaction)
 	s.router.Post("/get_client_balance", s.GetClientBalance)
+	s.router.Post("/unreserve_money", s.UnreserveMoney)
 }
 
 func (s *Server) Up() {
