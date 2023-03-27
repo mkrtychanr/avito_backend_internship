@@ -1,12 +1,17 @@
 package server
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
 
+	"github.com/mkrtychanr/avito_backend_internship/internal/model"
 	"github.com/shopspring/decimal"
 )
 
@@ -69,4 +74,51 @@ func makeJsonRespond(w http.ResponseWriter, code int, data []byte) {
 func isGreaterThanOrEqualThanZero(value decimal.Decimal) bool {
 	zero := decimal.New(0, 0)
 	return value.GreaterThanOrEqual(zero)
+}
+
+func validateDate(date *model.Report) bool {
+	dateSlice := strings.Split(date.Date, "-")
+	if len(dateSlice) != 2 {
+		return false
+	}
+	_, err := strconv.Atoi(dateSlice[0])
+	if err != nil {
+		return false
+	}
+	month, err := strconv.Atoi(dateSlice[1])
+	if err != nil {
+		return false
+	}
+	if !(month > 0 && month < 13) {
+		return false
+	}
+	date.Year = dateSlice[0]
+	date.Month = dateSlice[1]
+	return true
+}
+
+func createCSVReport(filename string, reportSlice []model.CSVReport) error {
+	file, err := os.Create("reports/" + filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+	writer.Comma = ';'
+	err = writer.WriteAll(reformSliceToCSVForm(reportSlice))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func reformSliceToCSVForm(data []model.CSVReport) [][]string {
+	result := make([][]string, 0)
+	for i, line := range data {
+		result = append(result, make([]string, 2))
+		result[i][0] = line.Service
+		result[i][1] = line.Price
+	}
+	return result
 }

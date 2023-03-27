@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/mkrtychanr/avito_backend_internship/internal/model"
 )
 
@@ -106,4 +108,32 @@ func (s *Server) addClientSheetChange(id, value string, status byte) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Server) getReportSlice(date model.Report) ([]model.CSVReport, error) {
+	s.mu.Lock()
+	rows, err := s.db.Query(`with time_filter as (
+		select * from report
+		where 
+		date_part('year', report_time) = $1 
+		and 
+		date_part('month', report_time) = $2
+	  )
+	  
+	  select service_id, sum(price::decimal) from time_filter group by service_id`, date.Year, date.Month)
+	s.mu.Unlock()
+	if err != nil {
+		return nil, err
+	}
+	data := make([]model.CSVReport, 0)
+	for rows.Next() {
+		newLine := model.CSVReport{}
+		err := rows.Scan(&newLine.Service, &newLine.Price)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(newLine.Service)
+		data = append(data, newLine)
+	}
+	return data, nil
 }

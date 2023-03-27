@@ -47,6 +47,8 @@ func (s *Server) setRouter() {
 	s.router.Post("/allow_transaction", s.AllowTransaction)
 	s.router.Post("/get_client_balance", s.GetClientBalance)
 	s.router.Post("/unreserve_money", s.UnreserveMoney)
+	s.router.Post("/generate_report", s.GenerateReport)
+	s.router.Get("/reports/{file}", s.GetReport)
 }
 
 func (s *Server) Up() {

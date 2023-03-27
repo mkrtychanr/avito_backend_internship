@@ -2,6 +2,8 @@ package server
 
 import (
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/mkrtychanr/avito_backend_internship/internal/model"
 	"github.com/shopspring/decimal"
@@ -214,4 +216,33 @@ func (s *Server) UnreserveMoney(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondSuccess(w)
+}
+
+func (s *Server) GenerateReport(w http.ResponseWriter, r *http.Request) {
+	date := model.Report{}
+	ok := getDataFromRequest(w, r, &date)
+	if !ok {
+		return
+	}
+	if !validateDate(&date) {
+		invalidData(w)
+		return
+	}
+	reportSlice, err := s.getReportSlice(date)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	reportFileName := strings.Replace(time.Now().String(), " ", "_", -1)
+	err = createCSVReport(reportFileName, reportSlice)
+	if err != nil {
+		internalServerError(w, err)
+		return
+	}
+	respondSuccess(w)
+}
+
+func (s *Server) GetReport(w http.ResponseWriter, r *http.Request) {
+	// filename := chi.URLParam(r, "file")
+
 }
