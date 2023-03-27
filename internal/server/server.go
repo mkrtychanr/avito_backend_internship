@@ -42,18 +42,22 @@ func NewServer(configPath string) (*Server, error) {
 
 func (s *Server) setRouter() {
 	s.router.Use(middleware.Logger)
+	s.router.Get("/balance/{client_id}", s.GetClientBalance)
+	s.router.Get("/reports/{file}", s.GetReport)
 	s.router.Post("/add_money", s.AddMoney)
 	s.router.Post("/reserve_money", s.ReserveMoney)
-	s.router.Post("/allow_transaction", s.AllowTransaction)
-	s.router.Post("/get_client_balance", s.GetClientBalance)
 	s.router.Post("/unreserve_money", s.UnreserveMoney)
+	s.router.Post("/allow_transaction", s.AllowTransaction)
 	s.router.Post("/generate_report", s.GenerateReport)
-	s.router.Get("/reports/{file}", s.GetReport)
 }
 
 func (s *Server) Up() {
-	address := fmt.Sprintf("%s:%s", s.config.Address, s.config.Port)
+	address := s.GetAddres()
 	s.setRouter()
 	fmt.Printf("Server is up on %s\n", address)
 	http.ListenAndServe(address, s.router)
+}
+
+func (s *Server) GetAddres() string {
+	return fmt.Sprintf("%s:%s", s.config.Address, s.config.Port)
 }

@@ -1,10 +1,16 @@
 package server
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/mkrtychanr/avito_backend_internship/internal/model"
 	"github.com/shopspring/decimal"
 )
@@ -144,12 +150,9 @@ func (s *Server) AllowTransaction(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetClientBalance(w http.ResponseWriter, r *http.Request) {
-	getClientBalance := model.ClientBalance{}
-	ok := getDataFromRequest(w, r, &getClientBalance)
-	if !ok {
-		return
-	}
-	ok, err := s.isClientExist(getClientBalance.Id)
+	clientId := chi.URLParam(r, "client_id")
+	fmt.Println("id: ", clientId)
+	ok, err := s.isClientExist(clientId)
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -158,7 +161,7 @@ func (s *Server) GetClientBalance(w http.ResponseWriter, r *http.Request) {
 		clientNotFound(w)
 		return
 	}
-	value, err := s.getClientBalance(getClientBalance.Id)
+	value, err := s.getClientBalance(clientId)
 	if err != nil {
 		internalServerError(w, err)
 		return
@@ -233,16 +236,37 @@ func (s *Server) GenerateReport(w http.ResponseWriter, r *http.Request) {
 		internalServerError(w, err)
 		return
 	}
-	reportFileName := strings.Replace(time.Now().String(), " ", "_", -1)
+	reportFileName := strings.Replace(time.Now().String(), " ", "_", -1) + ".csv"
 	err = createCSVReport(reportFileName, reportSlice)
 	if err != nil {
 		internalServerError(w, err)
 		return
 	}
-	respondSuccess(w)
+	respondLink(w, reportFileName, s.GetAddres())
 }
 
 func (s *Server) GetReport(w http.ResponseWriter, r *http.Request) {
-	// filename := chi.URLParam(r, "file")
-
+	filename := "reports/" + chi.URLParam(r, "file")
+	file, err := os.Open(filename)
+	if err != nil {
+		reportNotFound(w)
+		return
+	}
+	defer file.Close()
+	header := make([]byte, 512)
+	file.Read(header)
+	fileContentType := http.DetectContentType(header)
+	fileStat, _ := file.Stat()
+	fileSize := strconv.FormatInt(fileStat.Size(), 10)
+	w.Header().Set("Content-Disposition", "attachment; filename="+filename)
+	w.Header().Set("Content-Type", fileContentType)
+	w.Header().Set("Content-Length", fileSize)
+	file.Seek(0, 0)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		io.Copy(w, file)
+		wg.Done()
+	}()
+	wg.Wait()
 }

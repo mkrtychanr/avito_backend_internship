@@ -40,6 +40,14 @@ func notEnoughMoneyOnTheBalanceSheet(w http.ResponseWriter) {
 	makeJsonRespond(w, 406, jsonError("not enough money on the balance sheet"))
 }
 
+func reportNotFound(w http.ResponseWriter) {
+	makeJsonRespond(w, 404, jsonError("report not found"))
+}
+
+func respondLink(w http.ResponseWriter, filename, address string) {
+	makeJsonRespond(w, 200, jsonResult(fmt.Sprintf("http://%s/reports/%s", address, filename)))
+}
+
 func getDataFromRequest(w http.ResponseWriter, r *http.Request, v interface{}) bool {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -59,7 +67,7 @@ func jsonError(respondText string) []byte {
 }
 
 func jsonResult(respondText string) []byte {
-	return []byte(fmt.Sprintf(`{"result": %s}`, respondText))
+	return []byte(fmt.Sprintf(`{"result": "%s"}`, respondText))
 }
 
 func makeJsonRespond(w http.ResponseWriter, code int, data []byte) {
