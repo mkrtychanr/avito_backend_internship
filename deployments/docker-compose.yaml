@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:13.3
+    environment:
+      POSTGRES_DB: "avito"
+      POSTGRES_USER: "admin"
+      POSTGRES_PASSWORD: "admin"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ../database:/var/lib/postgresql/data
+      - ../migrate.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  server:
+    depends_on:
+      - "postgres"
+    build:
+      context: ../
+      dockerfile: deployments/Dockerfile
+    volumes:
+      - ../reports:/app/reports
+    restart: unless-stopped
+    ports:
+      - "80:80"

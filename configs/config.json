@@ -1,0 +1,11 @@
+{
+    "server": {
+        "address": "",
+        "port": "80"
+    }, 
+    "db": {
+        "db": "avito",
+        "user": "admin",
+        "password": "admin"
+    }
+}

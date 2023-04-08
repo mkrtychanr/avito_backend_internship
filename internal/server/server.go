@@ -23,7 +23,8 @@ func NewServer(configPath string) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	connStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", config.User, config.Password, config.DBname)
+	// connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=http://postgres sslmode=disable", config.User, config.Password, config.DBname)
+	connStr := fmt.Sprintf("postgresql://%s:%s@postgres/%s?sslmode=disable", config.User, config.Password, config.DBname)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
